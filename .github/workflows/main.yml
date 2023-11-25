@@ -1,0 +1,79 @@
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using Microsoft.Windows.Server.RemoteDesktopServices.Session;
+
+namespace RDPSERVER
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Create a TCP listener on port 3389
+            TcpListener listener = new TcpListener(IPAddress.Any, 3389);
+            listener.Start();
+
+            // Accept incoming connections
+            while (true)
+            {
+                TcpClient client = listener.AcceptTcpClient();
+                Console.WriteLine("Client connected: {0}", client.Client.RemoteEndPoint);
+
+                // Start a new thread to handle the client connection
+                new Thread(new ThreadStart(HandleClientConnection)).Start(client);
+            }
+        }
+
+        private static void HandleClientConnection(object obj)
+        {
+            TcpClient client = (TcpClient)obj;
+
+            // Create a network stream for sending and receiving data
+            NetworkStream stream = client.GetStream();
+
+
+            // Create a remote desktop session
+            using (RemoteDesktopSession session = new RemoteDesktopSession())
+            {
+                // Configure the session
+                session.ListenTcp = true;
+                session.ListenPort = 3389;
+
+                // Start the session
+                session.Start();
+
+                // Accept a connection to the session
+                using (TcpClient sessionClient = session.AcceptTcpClient())
+                {
+                    // Create a network stream for the session connection
+                    NetworkStream sessionStream = sessionClient.GetStream();
+
+                    // Handle the RDP protocol
+                    while (true)
+                    {
+                        // Read data from the client
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = stream.Read(buffer, 0, buffer.Length);
+
+                        // Process the received data
+                        // ...
+
+                        // Send data to the client
+                        stream.Write(buffer, 0, bytesRead);
+
+                        // Read data from the session
+                        buffer = new byte[1024];
+                        bytesRead = sessionStream.Read(buffer, 0, buffer.Length);
+
+                        // Process the received data
+                        // ...
+
+                        // Send data to the session
+                        sessionStream.Write(buffer, 0, bytesRead);
+                    }
+                }
+            }
+        }
+    }
+}
