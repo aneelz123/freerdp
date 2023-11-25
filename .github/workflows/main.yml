@@ -18,7 +18,6 @@ namespace RDPSERVER
             while (true)
             {
                 TcpClient client = listener.AcceptTcpClient();
-                Console.WriteLine("Client connected: {0}", client.Client.RemoteEndPoint);
 
                 // Start a new thread to handle the client connection
                 new Thread(new ThreadStart(HandleClientConnection)).Start(client);
